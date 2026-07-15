@@ -19,7 +19,15 @@ let package = Package(
     ],
     dependencies: [
         // LK-Prefixed Dynamic WebRTC XCFramework
-        .package(url: "https://github.com/livekit/webrtc-xcframework.git", exact: "144.7559.03"),
+        // AES-256 fork (sigarone/client-sdk-swift, branch/tag aes256-livekit /
+        // 2.13.0-aes256-livekit): redirects to sigarone/webrtc-xcframework's
+        // own aes256-livekit fork (tag 144.7559.03-aes256-livekit), which
+        // points its binaryTarget at a LiveKitWebRTC.xcframework carrying the
+        // aes256-framecryptor.patch — group-call media gets AES-256-GCM
+        // instead of the fixed AES-128 FrameCryptor once a 32-byte shared
+        // key is supplied. Everything else in this file is untouched from
+        // upstream 2.13.0.
+        .package(url: "https://github.com/sigarone/webrtc-xcframework.git", exact: "144.7559.03-aes256-livekit"),
         .package(url: "https://github.com/livekit/livekit-uniffi-xcframework.git", exact: "0.0.5"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.31.0"),
         // Only used for DocC generation
