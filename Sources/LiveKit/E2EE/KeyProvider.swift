@@ -141,6 +141,31 @@ public final class BaseKeyProvider: NSObject, Loggable, Sendable {
         setCurrentKeyIndex(targetIndex)
     }
 
+    /// Raw-bytes variant of `setKey(key:participantId:index:)` — hands
+    /// `keyData` VERBATIM to the native key provider, with no UTF-8
+    /// re-encoding step in between. With the aes256-framecryptor.patch
+    /// applied to the underlying WebRTC build (DeriveKeys gates on
+    /// `password.size() == 32 ? 256 : 128`), passing a raw 32-byte key here
+    /// makes the native FrameCryptor derive an AES-256-GCM frame key,
+    /// whereas the String overload above (44-byte base64 text) derives
+    /// AES-128-GCM. Behavior is otherwise identical to the String overload.
+    public func setKey(keyData: Data, participantId: String? = nil, index: Int32? = nil) {
+        let targetIndex = index ?? getCurrentKeyIndex()
+
+        if options.sharedKey {
+            rtcKeyProvider.setSharedKey(keyData, with: targetIndex)
+        } else {
+            if participantId == nil {
+                log("setKey: Please provide valid participantId for non-SharedKey mode.")
+                return
+            }
+
+            rtcKeyProvider.setKey(keyData, with: targetIndex, forParticipant: participantId!)
+        }
+
+        setCurrentKeyIndex(targetIndex)
+    }
+
     public func ratchetKey(participantId: String? = nil, index: Int32? = nil) -> Data? {
         let targetIndex = index ?? getCurrentKeyIndex()
 
