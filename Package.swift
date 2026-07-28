@@ -18,8 +18,29 @@ let package = Package(
         ),
     ],
     dependencies: [
-        // LK-Prefixed Dynamic WebRTC XCFramework
-        .package(url: "https://github.com/livekit/webrtc-xcframework.git", exact: "144.7559.11"),
+        // AES-256 fork (sigarone/client-sdk-swift): redirects to
+        // sigarone/webrtc-xcframework's own aes256-livekit fork, which
+        // points its binaryTarget at a LiveKitWebRTC.xcframework carrying
+        // the aes256-framecryptor.patch — group-call media gets AES-256-GCM
+        // instead of the fixed AES-128 FrameCryptor once a 32-byte shared
+        // key is supplied.
+        //
+        // PINNED AT 144.7559.10-aes256-livekit, NOT the 144.7559.11 this
+        // 2.15.3 rebase would otherwise pull in: upstream bumped the raw
+        // WebRTC binary between .10 and .11 (different release checksum,
+        // different underlying webrtc-sdk/webrtc-build source commit —
+        // verified via `gh api .../compare`, not just a version-string
+        // re-tag), and no aes256-livekit variant of .11 has been built yet
+        // (that requires the full native rebuild pipeline in
+        // BCRYPTO/webrtc-aes256-build/apple/, macOS+Xcode only, not
+        // buildable from this session). Nothing else in this 2.15.3 rebase
+        // touches Sources/LiveKit/E2EE/ (checked: zero overlap in the
+        // upstream 2.15.1..2.15.3 diff), so staying on the .10 binary here
+        // is safe for THIS release — it only carries forward the
+        // Package.swift/Package@swift-6.2.swift dependency edit onto the
+        // new tag. Follow-up: rebuild+tag 144.7559.11-aes256-livekit on a
+        // Mac, then bump this pin in a dedicated commit.
+        .package(url: "https://github.com/sigarone/webrtc-xcframework.git", exact: "144.7559.10-aes256-livekit"),
         .package(url: "https://github.com/livekit/livekit-uniffi-xcframework.git", exact: "0.0.6"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.31.0"),
         // Only used for DocC generation
