@@ -113,6 +113,13 @@ public final class BaseKeyProvider: NSObject, Loggable, Sendable {
 
     struct State {
         var currentKeyIndex: Int32 = 0
+        /// W-GRPKEYPIN-SWIFT (2026-07-28): per-participant counterpart of
+        /// `currentKeyIndex`. Mirrors client-sdk-android's
+        /// `KeyProvider.getLatestKeyIndex`, which its `E2EEManager` reads to
+        /// pin each newly created FrameCryptor (E2EEManager.kt:199). Upstream
+        /// Swift has no equivalent, which is the whole bug this fork entry
+        /// exists to fix — see `getLatestKeyIndex` below.
+        var latestSetIndex: [String: Int32] = [:]
     }
 
     private let _state = StateSync(State())
@@ -182,7 +189,32 @@ public final class BaseKeyProvider: NSObject, Loggable, Sendable {
             rtcKeyProvider.setKey(keyData, with: targetIndex, forParticipant: participantId!)
         }
 
+        if let participantId { _state.mutate { $0.latestSetIndex[participantId] = targetIndex } }
         setCurrentKeyIndex(targetIndex)
+    }
+
+    /// W-GRPKEYPIN-SWIFT — the key-ring index most recently installed for
+    /// `participantId`. `E2EEManager` reads this to pin each new
+    /// `LKRTCFrameCryptor`'s `keyIndex` at creation time.
+    ///
+    /// WHY THIS EXISTS: the native transformer defaults to
+    /// `key_index_ = 0` (`frame_crypto_transformer.h`), and its ENCRYPT path
+    /// looks up exactly that slot — `GetKeySet(key_index_) == nullptr` makes
+    /// `encryptFrame` report `kMissingKey` and return WITHOUT calling
+    /// `OnTransformedFrame`, i.e. the frame is destroyed inside the transform
+    /// and no RTP ever leaves the device. Upstream Swift never assigns
+    /// `keyIndex` on a sender/receiver cryptor, so any app that installs keys
+    /// at a NON-ZERO index (e.g. `epoch % ringSize`) silently transmits
+    /// nothing, forever, with no throw and no error — while its RECEIVE path
+    /// keeps working, because decryption reads the index out of the frame
+    /// trailer rather than from `key_index_`. Device-confirmed on
+    /// Q-Audion group calls: 12/12 local tracks `missing_key`, 0 `ok`, over
+    /// three days, audio and video alike.
+    ///
+    /// Falls back to the global `currentKeyIndex` (not Android's literal `0`)
+    /// so a provider that only ever used the shared/global index is unaffected.
+    public func getLatestKeyIndex(_ participantId: String) -> Int32 {
+        _state.read { $0.latestSetIndex[participantId] ?? $0.currentKeyIndex }
     }
 
     public func ratchetKey(participantId: String? = nil, index: Int32? = nil) -> Data? {
