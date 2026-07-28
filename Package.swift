@@ -18,8 +18,28 @@ let package = Package(
         ),
     ],
     dependencies: [
-        // LK-Prefixed Dynamic WebRTC XCFramework
-        .package(url: "https://github.com/livekit/webrtc-xcframework.git", exact: "144.7559.11"),
+        // AES-256 fork (sigarone/client-sdk-swift): redirects to
+        // sigarone/webrtc-xcframework's own aes256-livekit fork, which
+        // points its binaryTarget at a LiveKitWebRTC.xcframework carrying
+        // the aes256-framecryptor.patch — group-call media gets AES-256-GCM
+        // instead of the fixed AES-128 FrameCryptor once a 32-byte shared
+        // key is supplied.
+        //
+        // PINNED AT 144.7559.10-aes256-livekit, NOT the 144.7559.11 this
+        // 2.16.0 rebase would otherwise pull in: upstream bumped the raw
+        // WebRTC binary between .10 and .11 (different release checksum,
+        // different underlying webrtc-sdk/webrtc-build source commit —
+        // verified via `gh api .../compare`, not just a version-string
+        // re-tag), and no aes256-livekit variant of .11 has been built yet
+        // (that requires the full native rebuild pipeline in
+        // BCRYPTO/webrtc-aes256-build/apple/, macOS+Xcode only, not
+        // buildable from this session). Sources/LiveKit/E2EE/ has zero
+        // overlap with the upstream 2.15.1..2.16.0 diff other than the
+        // setKey(keyData:) overload upstream added itself (see
+        // KeyProvider.swift's own comment on that function), so staying on
+        // the .10 binary is safe for THIS release. Follow-up: rebuild+tag
+        // 144.7559.11-aes256-livekit on a Mac, then bump this pin.
+        .package(url: "https://github.com/sigarone/webrtc-xcframework.git", exact: "144.7559.10-aes256-livekit"),
         .package(url: "https://github.com/livekit/livekit-uniffi-xcframework.git", exact: "0.0.6"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.31.0"),
         // Only used for DocC generation

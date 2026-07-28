@@ -153,7 +153,16 @@ public final class BaseKeyProvider: NSObject, Loggable, Sendable {
         setKey(keyData: Data(key.utf8), participantId: participantId, index: index)
     }
 
-    /// Sets a raw binary key without any string conversion.
+    /// Sets a raw binary key without any string conversion. Upstream-native
+    /// since 2.16.0 (this app's fork previously carried its own copy of
+    /// this exact overload, added 2026-07-28 before upstream had one —
+    /// dropped on the 2.16.0 rebase to avoid a duplicate-declaration
+    /// compile error, upstream's body is byte-identical). With the
+    /// aes256-framecryptor.patch applied to the underlying WebRTC build
+    /// (DeriveKeys gates on `password.size() == 32 ? 256 : 128`), passing a
+    /// raw 32-byte key here makes the native FrameCryptor derive an
+    /// AES-256-GCM frame key, whereas the String overload above (44-byte
+    /// base64 text) derives AES-128-GCM.
     ///
     /// - Parameters:
     ///   - keyData: The key bytes, stored as provided.
