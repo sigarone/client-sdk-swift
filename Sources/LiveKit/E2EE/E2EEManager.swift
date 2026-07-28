@@ -144,6 +144,19 @@ public class E2EEManager: NSObject, @unchecked Sendable, ObservableObject, Logga
         }
 
         frameCryptor.delegate = delegateAdapter
+        // W-GRPKEYPIN-SWIFT (2026-07-28) — THE fix. Without this the cryptor
+        // keeps the native default `key_index_ = 0`
+        // (frame_crypto_transformer.h), and the ENCRYPT path looks up exactly
+        // that slot: `GetKeySet(key_index_) == nullptr` makes `encryptFrame`
+        // report `kMissingKey` and RETURN WITHOUT calling
+        // `OnTransformedFrame` — the frame is destroyed inside the transform,
+        // so not a single RTP packet leaves the device and the SFU eventually
+        // times the publish out. Any app installing keys at a non-zero index
+        // (here `groupEpoch % ringSize`, provably never 0) transmits nothing,
+        // silently, forever — while RECEIVE keeps working, because decryption
+        // reads the index from the frame trailer instead. This is byte-for-byte
+        // what client-sdk-android already does (E2EEManager.kt:199).
+        frameCryptor.keyIndex = keyProvider.getLatestKeyIndex(participantIdentity.stringValue)
 
         return _state.mutate {
             $0.frameCryptors[[participantIdentity: publication.sid]] = frameCryptor
@@ -174,6 +187,13 @@ public class E2EEManager: NSObject, @unchecked Sendable, ObservableObject, Logga
         }
 
         frameCryptor.delegate = delegateAdapter
+        // W-GRPKEYPIN-SWIFT — parity with the sender above and with
+        // client-sdk-android. Functionally a no-op on the RECEIVE path
+        // (decryptFrame reads the key index out of the frame trailer, never
+        // from `key_index_`), but keeping the two sides symmetric means a
+        // future native change that does consult it cannot silently break
+        // only one direction.
+        frameCryptor.keyIndex = keyProvider.getLatestKeyIndex(participantIdentity.stringValue)
 
         return _state.mutate {
             $0.frameCryptors[[participantIdentity: publication.sid]] = frameCryptor
