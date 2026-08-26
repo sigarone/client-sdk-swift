@@ -39,7 +39,14 @@ let package = Package(
         // KeyProvider.swift's own comment on that function), so staying on
         // the .10 binary is safe for THIS release. Follow-up: rebuild+tag
         // 144.7559.11-aes256-livekit on a Mac, then bump this pin.
-        .package(url: "https://github.com/sigarone/webrtc-xcframework.git", exact: "144.7559.10-aes256-livekit"),
+        //
+        // 2026-08-26: still .10, but now the `-native-pli` variant — adds
+        // native-pli.patch (W-NATIVEPLI, unconditional rate-limited
+        // FrameCryptionState.kDecryptionFailed notification on a real
+        // decrypt-tag-mismatch), ported from Android's 2026-08-25 AAR
+        // rebuild to close the group-call iOS/Android parity gap. No
+        // WebRTC source/version change, same reasoning above still holds.
+        .package(url: "https://github.com/sigarone/webrtc-xcframework.git", exact: "144.7559.10-aes256-livekit-native-pli"),
         .package(url: "https://github.com/livekit/livekit-uniffi-xcframework.git", exact: "0.0.6"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.31.0"),
         // Only used for DocC generation

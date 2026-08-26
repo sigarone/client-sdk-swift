@@ -29,7 +29,7 @@ let package = Package(
         // WebRTC (missed once — confirmed via `swift package resolve`'s
         // output resolving the plain livekit URL despite Package.swift's
         // own redirect).
-        .package(url: "https://github.com/sigarone/webrtc-xcframework.git", exact: "144.7559.10-aes256-livekit"),
+        .package(url: "https://github.com/sigarone/webrtc-xcframework.git", exact: "144.7559.10-aes256-livekit-native-pli"),
         .package(url: "https://github.com/livekit/livekit-uniffi-xcframework.git", exact: "0.0.6"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.31.0"),
         // Only used for DocC generation
