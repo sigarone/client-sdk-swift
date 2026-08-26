@@ -46,7 +46,16 @@ let package = Package(
         // decrypt-tag-mismatch), ported from Android's 2026-08-25 AAR
         // rebuild to close the group-call iOS/Android parity gap. No
         // WebRTC source/version change, same reasoning above still holds.
-        .package(url: "https://github.com/sigarone/webrtc-xcframework.git", exact: "144.7559.10-aes256-livekit-native-pli"),
+        //
+        // 2026-08-26 (later same day): bumped -native-pli -> -native-pli-2.
+        // The first -native-pli tag's LiveKitWebRTC.xcframework was missing
+        // Headers/RTCAudioProcessingState.h (a stale webrtc_ref default in
+        // build-livekit-ios.yml — root-caused and fixed in
+        // sigarone/webrtc-aes256-build@506c59d, rebuild verified header-for-
+        // header identical to the known-good .10 build). This is a build
+        // fix only — same WebRTC source commit, same native-pli.patch
+        // content the -native-pli tag already carried.
+        .package(url: "https://github.com/sigarone/webrtc-xcframework.git", exact: "144.7559.10-aes256-livekit-native-pli-2"),
         .package(url: "https://github.com/livekit/livekit-uniffi-xcframework.git", exact: "0.0.6"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.31.0"),
         // Only used for DocC generation
